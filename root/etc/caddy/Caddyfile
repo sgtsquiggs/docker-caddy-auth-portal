@@ -1,0 +1,62 @@
+{
+  debug
+}
+
+localhost {
+  route /auth* {
+    auth_portal {
+      path /auth
+      backends {
+        local_backend {
+          method local
+          path /etc/caddy/auth/local/users.json
+          realm local
+        }
+      }
+      jwt {
+        token_name access_token
+        token_secret 0e2fdcf8-6868-41a7-884b-7308795fc286
+        token_issuer e1008f2d-ccfa-4e62-bbe6-c202ec2988cc
+      }
+      ui {
+        links {
+          "Prometheus" /prometheus
+          "Alert Manager" /alertmanager
+        }
+      }
+    }
+  }
+
+  route /prometheus* {
+    jwt {
+      primary yes
+      trusted_tokens {
+        static_secret {
+          token_name access_token
+          token_secret 383aca9a-1c39-4d7a-b4d8-67ba4718dd3f
+          token_issuer 7a50e023-2c6e-4a5e-913e-23ecd0e2b940
+        }
+      }
+      auth_url /auth
+      allow roles anonymous guest admin
+    }
+    respond * "prometheus" 200
+  }
+
+  route /alertmanager* {
+    jwt
+    respond * "alertmanager" 200
+  }
+
+  route /auth* {
+    respond * "auth portal" 200
+  }
+
+  route /version* {
+    respond * "1.0.0" 200
+  }
+
+  route {
+    redir https://{hostport}/auth 302
+  }
+}
